@@ -1,0 +1,28 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+IMPORTABLE EXTERNPROTO "../protos/RoboticArmWithGrabber.proto"
+
+WorldInfo {
+  contactProperties [
+    ContactProperties {
+      material1 "grabber"
+      material2 "target"
+      coulombFriction [
+        1000
+      ]
+    }
+  ]
+}
+Viewpoint {
+  position -3.128709163225057 0.030683323497075796 0.6978045586282475
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 2 2
+}

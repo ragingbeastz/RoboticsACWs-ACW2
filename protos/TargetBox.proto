@@ -1,0 +1,30 @@
+#VRML_SIM R2025a utf8
+
+PROTO TargetBox [
+    field SFString targetContactMaterial "target"
+    field SFVec3f boxTranslation 0.3 -0.2 0.025
+]
+
+{
+    DEF Target_Box Solid {
+    translation IS boxTranslation
+    children [
+        Shape {
+        appearance Appearance {
+            material Material {
+            diffuseColor 0.0941176 0.0941176 0.0941176
+            }
+        }
+        geometry Box {
+            size 0.05 0.05 0.05
+        }
+        }
+    ]
+    contactMaterial IS targetContactMaterial
+    boundingObject Box {
+        size 0.05 0.05 0.05
+    }
+    physics Physics {
+    }
+    }
+}

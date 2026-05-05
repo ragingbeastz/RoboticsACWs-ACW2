@@ -1,0 +1,285 @@
+#VRML_SIM R2025a utf8
+
+PROTO RoboticArmWithGrabber [
+  field SFString name "robotic_arm"
+  field SFString gripperContactMaterial "grabber"
+  field SFString controller "gripper_controller"
+]
+
+{
+    Robot {
+    children [
+        DEF joint_1 HingeJoint {
+        jointParameters HingeJointParameters {
+            axis 0 0 1
+            anchor 0 0 0.1
+        }
+        device [
+            PositionSensor {
+            name "pos_sensor_1"
+            }
+            RotationalMotor {
+            name "motor_1"
+            minPosition -3.14
+            maxPosition 3.14
+            }
+        ]
+        endPoint Solid {
+            translation 0 0 0.1
+            children [
+            DEF joint_2 HingeJoint {
+                jointParameters HingeJointParameters {
+                axis 0 1 0
+                anchor 0 0 0.4
+                }
+                device [
+                PositionSensor {
+                    name "pos_sensor_2"
+                }
+                RotationalMotor {
+                    name "motor_2"
+                    minPosition -1.0472
+                    maxPosition 4.1888
+                }
+                ]
+                endPoint Solid {
+                translation 0 0 0.4
+                rotation 0 1 0 0
+                children [
+                    DEF joint_3 HingeJoint {
+                    jointParameters HingeJointParameters {
+                        axis 0 1 0
+                        anchor 0 0 0.3
+                    }
+                    device [
+                        PositionSensor {
+                        name "pos_sensor_3"
+                        }
+                        RotationalMotor {
+                        name "motor_3"
+                        minPosition -1.0472
+                        maxPosition 4.1888
+                        }
+                    ]
+                    endPoint Solid {
+                        translation 0 0 0.3
+                        rotation 0 1 0 0
+                        children [
+                        DEF gripper_right Pose {
+                            translation 0 -0.1 0.45
+                            children [
+                            SliderJoint {
+                                jointParameters JointParameters {
+                                axis 0 1 0
+                                dampingConstant 5
+                                staticFriction 10
+                                }
+                                device [
+                                PositionSensor {
+                                    name "gripper_right_sensor"
+                                }
+                                LinearMotor {
+                                    name "gripper_right_motor"
+                                }
+                                ]
+                                endPoint Solid {
+                                children [
+                                    Shape {
+                                    appearance Appearance {
+                                        material Material {
+                                        diffuseColor 1 1 0
+                                        }
+                                    }
+                                    geometry Box {
+                                        size 0.1 0.01 0.1
+                                    }
+                                    }
+                                ]
+                                name "solid(1)"
+                                contactMaterial IS gripperContactMaterial
+                                boundingObject Box {
+                                    size 0.1 0.01 0.1
+                                }
+                                physics Physics {
+                                }
+                                }
+                            }
+                            ]
+                        }
+                        DEF gripper_left Pose {
+                            translation 0 0.1 0.45
+                            children [
+                            SliderJoint {
+                                jointParameters JointParameters {
+                                axis 0 -1 0
+                                dampingConstant 5
+                                staticFriction 10
+                                }
+                                device [
+                                PositionSensor {
+                                    name "gripper_left_sensor"
+                                }
+                                LinearMotor {
+                                    name "gripper_left_motor"
+                                }
+                                ]
+                                endPoint Solid {
+                                children [
+                                    Shape {
+                                    appearance Appearance {
+                                        material Material {
+                                        diffuseColor 1 1 0
+                                        }
+                                    }
+                                    geometry Box {
+                                        size 0.1 0.01 0.1
+                                    }
+                                    }
+                                ]
+                                contactMaterial IS gripperContactMaterial
+                                boundingObject Box {
+                                    size 0.1 0.01 0.1
+                                }
+                                physics Physics {
+                                }
+                                }
+                            }
+                            ]
+                        }
+                        DEF gripper_mount Pose {
+                            translation 0 0 0.4
+                            children [
+                            Shape {
+                                appearance Appearance {
+                                material Material {
+                                    diffuseColor 1 1 0
+                                }
+                                }
+                                geometry Box {
+                                size 0.01 0.2 0.01
+                                }
+                            }
+                            ]
+                        }
+                        Pose {
+                            translation 0 0 0.4
+                            children [
+                            GPS {
+                                name "End_Effector"
+                            }
+                            ]
+                        }
+                        Pose {
+                            translation 0 0 0.2
+                            children [
+                            Shape {
+                                appearance Appearance {
+                                material Material {
+                                    diffuseColor 0 0 1
+                                }
+                                }
+                                geometry Cylinder {
+                                height 0.4
+                                radius 0.02
+                                }
+                            }
+                            ]
+                        }
+                        ]
+                        name "link_3"
+                        boundingObject Pose {
+                        translation 0 0 0.2
+                        children [
+                            Cylinder {
+                            height 0.4
+                            radius 0.02
+                            }
+                        ]
+                        }
+                        physics Physics {
+                        }
+                    }
+                    }
+                    Pose {
+                    translation 0 0 0.15
+                    children [
+                        Shape {
+                        appearance Appearance {
+                            material Material {
+                            diffuseColor 0 1 0
+                            }
+                        }
+                        geometry Cylinder {
+                            height 0.3
+                            radius 0.03
+                        }
+                        }
+                    ]
+                    }
+                ]
+                name "link_2"
+                boundingObject Pose {
+                    translation 0 0 0.15
+                    children [
+                    Cylinder {
+                        height 0.3
+                        radius 0.03
+                    }
+                    ]
+                }
+                physics Physics {
+                }
+                }
+            }
+            Pose {
+                translation 0 0 0.2
+                children [
+                Shape {
+                    appearance Appearance {
+                    material Material {
+                        diffuseColor 1 0 0
+                    }
+                    }
+                    geometry Cylinder {
+                    height 0.4
+                    radius 0.04
+                    }
+                }
+                ]
+            }
+            ]
+            name "link_1"
+            boundingObject Pose {
+            translation 0 0 0.2
+            children [
+                Cylinder {
+                height 0.4
+                radius 0.04
+                }
+            ]
+            }
+            physics Physics {
+            }
+        }
+        }
+        Pose {
+        translation 0 0 0.05
+        children [
+            Shape {
+            appearance Appearance {
+                material Material {
+                diffuseColor 0.290196 0.290196 0.290196
+                }
+            }
+            geometry Box {
+                size 0.1 0.1 0.1
+            }
+            }
+        ]
+        }
+    ]
+    name "robotic_arm"
+    controller "gripper_controller"
+    supervisor TRUE
+    }
+}
