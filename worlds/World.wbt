@@ -17,8 +17,9 @@ WorldInfo {
   ]
 }
 Viewpoint {
-  orientation -0.3027861604300368 0.32604712030202715 0.8955522410193564 1.4895945410246505
-  position -1.3045444030008457 -0.49605376321853645 1.0895958441379854
+  orientation -0.31809357263436117 -0.8778967278318573 0.35792990139247394 4.599711096304274
+  position -0.9524101822534395 0.9086652164383375 1.879414235437048
+  follow "vehicle:main_body"
 }
 TexturedBackground {
 }
@@ -33,9 +34,36 @@ Robot {
   children [
     Solid {
       children [
+        GPS {
+          translation 0 0 0.05
+          name "vehicle_gps"
+        }
         DistanceSensor {
-          translation 0 0.2 0
-          name "distance_sensor"
+          translation 0 0.2 -0.03
+          rotation 0 0 1 1.5708
+          name "distance_sensor_middle"
+          lookupTable [
+            0 0 0
+            0.3 1000 0
+          ]
+        }
+        DistanceSensor {
+          translation 0.125 0.2 -0.03
+          rotation 0 0 1 1.3089996938995747
+          name "distance_sensor_right"
+          lookupTable [
+            0 0 0
+            0.3 1000 0
+          ]
+        }
+        DistanceSensor {
+          translation -0.125 0.2 -0.03
+          rotation 0 0 1 1.8325996938995748
+          name "distance_sensor_left"
+          lookupTable [
+            0 0 0
+            0.3 1000 0
+          ]
         }
         DEF wheel_back_left HingeJoint {
           jointParameters HingeJointParameters {
