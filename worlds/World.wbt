@@ -17,8 +17,8 @@ WorldInfo {
   ]
 }
 Viewpoint {
-  orientation -0.31809357263436117 -0.8778967278318573 0.35792990139247394 4.599711096304274
-  position -0.9524101822534395 0.9086652164383375 1.879414235437048
+  orientation 0.526329401657996 0.00796515435342928 -0.8502434458826849 3.1794880703418174
+  position 3.9956973300573404 -0.7969587690745281 7.542389967813056
   follow "vehicle:main_body"
 }
 TexturedBackground {
@@ -29,11 +29,13 @@ RectangleArena {
   floorSize 3 3
 }
 Robot {
-  translation -1.12084 1.12717 0.1
-  rotation 0 0 1 -2.356185307179586
+  translation 0.44985 -1.14 0.0965658
   children [
     Solid {
       children [
+        InertialUnit {
+          name "vehicle_inertial_unit"
+        }
         GPS {
           translation 0 0 0.05
           name "vehicle_gps"
@@ -77,7 +79,7 @@ Robot {
           ]
           endPoint Solid {
             translation -0.15 -0.12 0
-            rotation -1.5700895750559034e-16 1 0 1.5708
+            rotation -1.5700925697641075e-16 1 0 1.5708000000000004
             children [
               Shape {
                 appearance Appearance {
@@ -120,7 +122,7 @@ Robot {
           ]
           endPoint Solid {
             translation -0.15 0.12 0
-            rotation -8.893085483715074e-18 1 -6.133162402562122e-19 1.5708
+            rotation -8.586427363586977e-18 1 -1.2266324805124251e-18 1.570799999999999
             children [
               Shape {
                 appearance Appearance {
@@ -163,7 +165,7 @@ Robot {
           ]
           endPoint Solid {
             translation 0.15 -0.12 0
-            rotation 7.850447875279517e-17 1 0 1.5707999999999998
+            rotation 7.850447875279521e-17 1 0 1.5707999999999989
             children [
               Shape {
                 appearance Appearance {
@@ -255,7 +257,7 @@ Robot {
   controller "vehicle_controller"
 }
 Solid {
-  translation -0.5 0.5 0.05
+  translation -0.5 0.87 0.05
   children [
     Shape {
       appearance Appearance {
@@ -264,17 +266,17 @@ Solid {
         }
       }
       geometry Box {
-        size 0.1 0.1 0.1
+        size 0.3 0.3 0.1
       }
     }
   ]
   name "box"
   boundingObject Box {
-    size 0.1 0.1 0.1
+    size 0.3 0.3 0.1
   }
 }
 Solid {
-  translation 0.01 -0.02 0.05
+  translation -1.06 -1.12 0.05
   children [
     Shape {
       appearance Appearance {
@@ -283,40 +285,17 @@ Solid {
         }
       }
       geometry Box {
-        size 0.1 0.1 0.1
-      }
-    }
-  ]
-  name "box(1)"
-  boundingObject Box {
-    size 0.1 0.1 0.1
-  }
-  physics Physics {
-  }
-}
-Solid {
-  translation -0.37 -0.35 0.05
-  children [
-    Shape {
-      appearance Appearance {
-        material Material {
-          diffuseColor 0.666667 0 0.0117647
-        }
-      }
-      geometry Box {
-        size 0.1 0.1 0.1
+        size 0.3 0.3 0.1
       }
     }
   ]
   name "box(2)"
   boundingObject Box {
-    size 0.1 0.1 0.1
-  }
-  physics Physics {
+    size 0.3 0.3 0.1
   }
 }
 Solid {
-  translation -0.07 -0.78 0.05
+  translation -0.63 -0.21 0.05
   children [
     Shape {
       appearance Appearance {
@@ -325,19 +304,17 @@ Solid {
         }
       }
       geometry Box {
-        size 0.1 0.1 0.1
+        size 0.3 0.3 0.1
       }
     }
   ]
   name "box(3)"
   boundingObject Box {
-    size 0.1 0.1 0.1
-  }
-  physics Physics {
+    size 0.3 0.3 0.1
   }
 }
 Solid {
-  translation 0.57 -0.03 0.05
+  translation 1.09 -0.81 0.05
   children [
     Shape {
       appearance Appearance {
@@ -346,19 +323,17 @@ Solid {
         }
       }
       geometry Box {
-        size 0.1 0.1 0.1
+        size 0.3 0.3 0.1
       }
     }
   ]
   name "box(4)"
   boundingObject Box {
-    size 0.1 0.1 0.1
-  }
-  physics Physics {
+    size 0.3 0.3 0.1
   }
 }
 Solid {
-  translation 0.06 0.5 0.05
+  translation 0.24 -0.03 0.05
   children [
     Shape {
       appearance Appearance {
@@ -367,19 +342,17 @@ Solid {
         }
       }
       geometry Box {
-        size 0.1 0.1 0.1
+        size 0.3 0.3 0.1
       }
     }
   ]
   name "box(5)"
   boundingObject Box {
-    size 0.1 0.1 0.1
-  }
-  physics Physics {
+    size 0.3 0.3 0.1
   }
 }
 Solid {
-  translation 0.46 0.62 0.05
+  translation 0.95 0.72 0.05
   children [
     Shape {
       appearance Appearance {
@@ -388,14 +361,12 @@ Solid {
         }
       }
       geometry Box {
-        size 0.1 0.1 0.1
+        size 0.3 0.3 0.1
       }
     }
   ]
   name "box(6)"
   boundingObject Box {
-    size 0.1 0.1 0.1
-  }
-  physics Physics {
+    size 0.3 0.3 0.1
   }
 }
