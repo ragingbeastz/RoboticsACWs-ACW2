@@ -38,14 +38,11 @@ initialiseDistanceSensors(distance_sensors, TIME_STEP);
 wb_gps_enable(vehicle_gps, TIME_STEP);
 wb_inertial_unit_enable(vehicle_inertial_unit, TIME_STEP);
 
-%Threshold for obstacle detection
-distance_threshold = 700;
-turning = false;
-turn_delay = 0.5;
 
 
-%A* Algorithm Grid Variables (m)
-cell_size = 0.01;
+
+%A* Algorithm Variables (m)
+cell_size = 0.03;
 floor_x = 3;
 floor_y = 3;
 grid_width = floor_x / cell_size;
@@ -53,14 +50,15 @@ grid_height = floor_y / cell_size;
 grid = zeros(grid_height, grid_width);
 obstacle_count = 0;
 penalty_grid = zeros(size(grid));
-
-%Note Start TIme
-start_time = wb_robot_get_time();
-
+last_astar_time = wb_robot_get_time();
+path = [];
+astar_position_x = 0;
+astar_position_y = 0;
+astar_turning = false;
 
 % Goal Position
-goal_x = -1.5;
-goal_y = 1.5;
+goal_x = 0.3;
+goal_y = 0.75 ;
 goal_threshold = 0.1;
 goal_reached = false;
 grid_based_goal_x = floor((goal_x + floor_x/2) / cell_size) + 1;
@@ -72,7 +70,25 @@ grid(grid_based_goal_y, grid_based_goal_x) = 2;
 grid_display = wb_robot_get_device('grid_display');
 
 
-counter = 0;
+%Obstacle Avoidance Variables
+distance_threshold = 900;
+
+turn_direction = "None";
+turn_chosen = false;
+
+turn_degree_rad = pi/8;
+target_turn_direction = inf;
+turned_to_direction = false;
+turn_tolerance = 0.05;
+
+started_forward_motion = false;
+forward_motion_time = 0.2;
+forward_motion_start_time = inf;
+
+finished_obstacle_avoidance = false;
+
+state = "ASTAR";
+
 while wb_robot_step(TIME_STEP) ~= -1
     if ~goal_reached
         % Get current position and distance sensor readings
@@ -89,78 +105,124 @@ while wb_robot_step(TIME_STEP) ~= -1
             continue;
         end
 
-        % Obstacle Avoidance
-        object_detected = any(ds_values < distance_threshold);
-
-        if object_detected && ~turning
-            turning = true;
-            turn_start_time = wb_robot_get_time();
-
-            if ds_values(1) > ds_values(3)
-                turn_direction = 'left';
-            else
-                turn_direction = 'right';
-            end
+        if any(ds_values < distance_threshold) && ~astar_turning
+            state = "OBSTACLEAVOIDANCE";
         end
 
-        if turning
-            current_turn_time = wb_robot_get_time() - turn_start_time;
-            if current_turn_time < turn_delay
-                if turn_direction == "left"
-                    turnLeft(SPEED, wheels);
+        if state == "OBSTACLEAVOIDANCE"
+            % Find highest
+            left_sensor = ds_values(1);
+            right_sensor = ds_values(3);
+            highest_sensor = max([left_sensor, right_sensor]);
+            
+            % Choose turn
+            if ~turn_chosen
+                if highest_sensor == left_sensor
+                    turn_direction = "Left";
                 else
-                    turnRight(SPEED, wheels);
+                    turn_direction = "Right";
+                end
+                turn_chosen = true;
+            end
+
+            % Turn to Direction
+            if target_turn_direction == inf
+                if turn_direction == "Left"
+                    target_turn_direction = rpy(3) + turn_degree_rad;
+                else
+                    target_turn_direction = rpy(3) - turn_degree_rad;
                 end
             end
 
-            if ~(object_detected) && ds_values(1) == 1000 && ds_values(2) == 1000 && ds_values(3) == 1000
-                turning = false;
+            % Turn based on Angle Difference
+            if ~ turned_to_direction
+                angle_difference = atan2(sin(target_turn_direction - rpy(3)), cos(target_turn_direction - rpy(3)));
+                if angle_difference > turn_tolerance
+                    turnLeft(SPEED, wheels);
+                    continue;
+                elseif angle_difference < -turn_tolerance
+                    turnRight(SPEED, wheels);
+                    continue;
+                else
+                    turned_to_direction = true;
+                end
+            end
+
+            % Go forward a bit
+            if ~started_forward_motion
+                forward_motion_start_time = wb_robot_get_time();
+                started_forward_motion = true;
+            end
+            if wb_robot_get_time() - forward_motion_start_time < forward_motion_time
+                goForwards(SPEED, wheels);
+            else
+                stop(wheels);
+                finished_obstacle_avoidance = true;
+            end
+
+
+            % Reset
+            if finished_obstacle_avoidance
+                state = "ASTAR";
+                turn_chosen = false;
+                turned_to_direction = false;
+                target_turn_direction = inf;
+                started_forward_motion = false;
+                forward_motion_start_time = inf;
+                finished_obstacle_avoidance = false;
             end
         end
 
 
-        if ~object_detected
+
+        if state == "ASTAR"
             %Update grid map with current sensor readings
-            tic;
+            % tic;
             grid = mapGridCoordinates(position, ds_values, rpy(3), cell_size, grid, floor_x, floor_y);
-            fprintf('Grid Mapping Time: %.6f seconds\n', toc);
+            % fprintf("Time taken to update grid: %f\n", toc);
+            
 
-            % % Calculate penalty grid for A* algorithm if obstacle count increases
-            % penalty_range = 5;
-            % current_obstacle_count = sum(grid(:) == 1);
-            % if current_obstacle_count > obstacle_count
-            %     penalty_grid = getCellPenaltyGrid(penalty_range, grid);
-            %     obstacle_count = current_obstacle_count;
-            % end
-
-            % Run A* algorithm to get path to goal
-            tic;
+            % Run A* algorithm every second to get path to goal
+            % tic;
             grid_based_position_x = floor((position(1) + floor_x/2) / cell_size) + 1;
             grid_based_position_y = floor((position(2) + floor_y/2) / cell_size) + 1;
             path = aStarSearch(grid, grid_based_position_x, grid_based_position_y, grid_based_goal_x, grid_based_goal_y);
-            fprintf('A* Search Time: %.6f seconds\n', toc);
+            % fprintf("Time taken to find path: %f\n", toc);
             
             
             % Update Grid Display
-            tic;
+            % tic;
             updateGridDisplay(grid_display, grid, path);
-            fprintf('Display Update Time: %.6f seconds\n', toc);
+            % fprintf("Time taken to update display: %f\n", toc);
+            
+            tic;
+            % Check if path is empty
+            if isempty(path)
+                stop(wheels);
+                continue;
+            end
+            % fprintf("Time taken to check if path is empty: %f\n", toc);
 
+            % tic;
             % Convert paths from grid coordinates to real world coordinates
             real_path = [];
             for i = 1:size(path, 1)
                 [real_x, real_y] = gridToRealCoordinates(path(i, 1), path(i, 2), cell_size, floor_x, floor_y);
                 real_path = [real_path; real_x, real_y];
             end
+            % fprintf("Time taken to convert path: %f\n", toc);
 
+            % tic;
             % Find Next point in path to current position
             if size(real_path, 1) >= 2
-                closest_path_x = real_path(2, 1);
-                closest_path_y = real_path(2, 2);
+                index = min(10, size(real_path, 1));
+                closest_path_x = real_path(index, 1);
+                closest_path_y = real_path(index, 2);
             else
                 closest_path_x = real_path(1, 1);
                 closest_path_y = real_path(1, 2);
             end
+            % fprintf("Time taken to find next point: %f\n", toc);
 
             % Find angle to next point and turn towards it if not facing it, then move forward
             [alligned, angle_to_target, angle_difference] = turnToTarget(closest_path_x, closest_path_y, position, rpy(3));
@@ -171,17 +233,9 @@ while wb_robot_step(TIME_STEP) ~= -1
             else
                 goForwards(SPEED, wheels);
             end
+
         end
-
-
-
-        % fprintf(['Robot: (%.2f, %.2f) | Goal: (%.2f, %.2f)\n' ...
-        %  'Target: (%.2f, %.2f) | Yaw: %.2f | Angle to Target: %.2f | Decision: %s | Path length: %d\n\n'], ...
-        %  position(1), position(2), goal_x, goal_y, ...
-        %  closest_path_x, closest_path_y, rpy(3), angle_to_target, alligned, size(path, 1));
-    
     end
-
 end
 
 wb_robot_cleanup();
@@ -297,74 +351,75 @@ function path = aStarSearch(grid, start_x, start_y, goal_x, goal_y)
 
 
     % Iterate through the grid if there are still unexplored cells
-    while any(unexplored(:))
+    unexplored_list = [start_x, start_y];
+    while ~isempty(unexplored_list)
 
         % Choose cell with lowest f_cost
-        f_costs_copy = f_costs;
-        f_costs_copy(~unexplored) = inf; % Set f_costs of non-unexplored cells to inf so they are not chosen
-        [current_index_y, current_index_x] = find(f_costs_copy == min(f_costs_copy(:)), 1); % Get index of cell with lowest f_cost
-        current_cell = [current_index_x, current_index_y];
+        unexplored_f_costs = zeros(size(unexplored_list, 1), 1);
 
-        current_cell_x = current_cell(1);
-        current_cell_y = current_cell(2);
+        for i = 1:size(unexplored_list, 1)
+            temp_x = unexplored_list(i, 1);
+            temp_y = unexplored_list(i, 2);
+            unexplored_f_costs(i) = f_costs(temp_y, temp_x);
+        end
+        [~, min_f_cost_index] = min(unexplored_f_costs);
 
-        % Check if its the goal cell
+        current_cell_x = unexplored_list(min_f_cost_index, 1);
+        current_cell_y = unexplored_list(min_f_cost_index, 2);
+
+
+        % Check if its the goal
         if current_cell_y == goal_y && current_cell_x == goal_x
             break;
         end
-        
+
+
         % Move current cell from unexplored to explored
+        unexplored_list(min_f_cost_index, :) = [];
         unexplored(current_cell_y, current_cell_x) = false;
         explored(current_cell_y, current_cell_x) = true;
 
+
         % Get neighbours
         neighbours = getneighbours(current_cell_x, current_cell_y, grid);
-
 
         % Check each neighbour
         for i = 1:size(neighbours, 1)
             neighbour_x = neighbours(i, 1);
             neighbour_y = neighbours(i, 2);
 
-            % Check if neighbour is in explored
+            % If neighbour is already explored, skip
             if explored(neighbour_y, neighbour_x)
                 continue;
             end
             
+            % Calculate movement penalty
             if grid(neighbour_y, neighbour_x) == 3
                 neighbour_penalty = 5;
             else
                 neighbour_penalty = 0;
             end
 
-            % Add Different penalties for straight and diagonals
-            if neighbour_x ~= current_cell_x && neighbour_y ~= current_cell_y
-                movement_penalty = 1.5;
-            else
-                movement_penalty = 1;
-            end
+            % Calculate g_cost 
+            new_g_cost = g_costs(current_cell_y, current_cell_x) + 1 + neighbour_penalty;
 
-            % % Calculate g cost
-            new_g_cost = g_costs(current_cell_y, current_cell_x) + movement_penalty + neighbour_penalty;
-
-            % Check if neighbour is in unexplored
+            % If neighbour is unexplored, add to unexplored
             if ~unexplored(neighbour_y, neighbour_x)
                 unexplored(neighbour_y, neighbour_x) = true;
-
-            % if new g cost is higher than existing g cost, skip
+                unexplored_list = [unexplored_list; neighbour_x, neighbour_y];
+            
+            % If neighbour is already unexplored but has a higher g_cost, skip
             elseif new_g_cost >= g_costs(neighbour_y, neighbour_x)
                 continue;
             end
 
-            % Update parent, g cost, and f cost
-            % Parent: Current Cell is new best way to reach this neighbour
+            % Update parent, g_cost, and f_cost
             parents_x(neighbour_y, neighbour_x) = current_cell_x;
             parents_y(neighbour_y, neighbour_x) = current_cell_y;
-            % G Cost: Cost from Start Cell to Neighbour through Current Cell
             g_costs(neighbour_y, neighbour_x) = new_g_cost;
-            % F Cost: Estimated cost from Start Cell to Goal Cell through Neighbour
             f_costs(neighbour_y, neighbour_x) = new_g_cost + getHeuristic(neighbour_x, neighbour_y, goal_x, goal_y);
         end
+
     end
 
     % Reconstruct path from goal to start using parent map
@@ -372,6 +427,7 @@ function path = aStarSearch(grid, start_x, start_y, goal_x, goal_y)
     current_cell_x = goal_x;
     current_cell_y = goal_y;
     
+    tic;
     while true
         % Add parent to path
         path = [[current_cell_x, current_cell_y]; path];
@@ -389,25 +445,23 @@ function path = aStarSearch(grid, start_x, start_y, goal_x, goal_y)
         current_cell_x = parent_x;
         current_cell_y = parent_y;
     end
+    fprintf("Time taken to reconstruct path: %f\n", toc);
+
 end
 
 function heuristic = getHeuristic(x1, y1, x2, y2)
     %Using Manhattan Distance as heuristic
-    heuristic = abs(x1 - x2) + abs(y1 - y2);
+    heuristic =  sqrt((x1 - x2)^2 + (y1 - y2)^2);
 end
 
 function valid_neighbours = getneighbours(cell_x, cell_y, grid)
 
-    %Get Neighbouring Cells including diagonals
+    %Get Neighbouring Cells
     neighbours = [
         cell_x - 1, cell_y;     % Left
         cell_x + 1, cell_y;     % Right
         cell_x, cell_y - 1;     % Up
         cell_x, cell_y + 1;     % Down
-        cell_x - 1, cell_y - 1; % Up-Left
-        cell_x + 1, cell_y - 1; % Up-Right
-        cell_x - 1, cell_y + 1; % Down-Left
-        cell_x + 1, cell_y + 1; % Down-Right
     ];
 
     % Loop through neighbours and check if they are within grid bounds and not obstacles
@@ -428,39 +482,6 @@ function valid_neighbours = getneighbours(cell_x, cell_y, grid)
         valid_neighbours = [valid_neighbours; neighbours(i, :)];
     end
 
-end
-
-function penalty_grid = getCellPenaltyGrid(penalty_range, grid)
-    % Create zeroes grid
-    penalty_grid = zeros(size(grid));
-    
-    % Find obstacle cells
-    [obstacle_y, obstacle_x] = find(grid == 1);
-
-    % For each obstacle cell, add penalty to cells within penalty range
-    for i = 1:length(obstacle_x)
-        obstacle_cell_x = obstacle_x(i);
-        obstacle_cell_y = obstacle_y(i);
-
-        % Define bounds 
-        x_min = max(1, obstacle_cell_x - penalty_range);
-        x_max = min(size(grid, 2), obstacle_cell_x + penalty_range);
-        y_min = max(1, obstacle_cell_y - penalty_range);
-        y_max = min(size(grid, 1), obstacle_cell_y + penalty_range);
-
-        % Loop through cells within bounds and add penalty based on distance to obstacle
-        for x = x_min:x_max
-            for y = y_min:y_max
-                distance_to_obstacle = sqrt((x - obstacle_cell_x)^2 + (y - obstacle_cell_y)^2);
-                if distance_to_obstacle <= penalty_range
-                    current_penalty =  penalty_range - distance_to_obstacle;
-                    if current_penalty > penalty_grid(y, x)
-                        penalty_grid(y, x) = current_penalty;
-                    end
-                end
-            end
-        end
-    end
 end
 
 %Plot positions on the grid using gps position and distance sensor readings, to be used for A* algorithm
@@ -542,7 +563,7 @@ function grid=mapGridCoordinates(gps_position, distance_sensor_values, yaw,  cel
 end
 
 function grid=addObstacle(grid, obstacle_x, obstacle_y)
-    near_obstacle_search_size = 20;
+    near_obstacle_search_size = 10;
 
     % Find Boundaries
     x_min = max(1, obstacle_x - near_obstacle_search_size);
@@ -621,7 +642,7 @@ function [aligned, target_angle, angle_difference] = turnToTarget(target_x, targ
     angle_difference = atan2(sin(target_angle - current_angle), ...
                              cos(target_angle - current_angle));
 
-    tolerance = 0.3;
+    tolerance = 0.1;
 
     if angle_difference > tolerance
         aligned = "left";
