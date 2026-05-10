@@ -1,0 +1,251 @@
+#VRML_SIM R2025a utf8
+PROTO Vehicle [
+  field SFVec3f translation 0.27985 -0.74 0.0965658
+  field SFRotation rotation 0 0 1 0
+  field SFString controller "vehicle_controller"
+]
+
+{
+    Robot {
+    translation IS translation
+    rotation IS rotation
+    children [
+        Solid {
+        children [
+            Receiver {
+            name "vehicle_receiver"
+            channel 1
+            }
+            Emitter {
+            name "vehicle_emitter"
+            channel 1
+            }
+            Display {
+            name "grid_display"
+            width 300
+            height 300
+            }
+            InertialUnit {
+            name "vehicle_inertial_unit"
+            }
+            GPS {
+            translation 0 0 0.05
+            name "vehicle_gps"
+            }
+            DistanceSensor {
+            translation 0 0.2 -0.03
+            rotation 0 0 1 1.5708
+            name "distance_sensor_middle"
+            lookupTable [
+                0 0 0
+                0.3 1000 0
+            ]
+            }
+            DistanceSensor {
+            translation 0.125 0.2 -0.03
+            rotation 0 0 1 1.3089996938995747
+            name "distance_sensor_right"
+            lookupTable [
+                0 0 0
+                0.3 1000 0
+            ]
+            }
+            DistanceSensor {
+            translation -0.125 0.2 -0.03
+            rotation 0 0 1 1.8325996938995748
+            name "distance_sensor_left"
+            lookupTable [
+                0 0 0
+                0.3 1000 0
+            ]
+            }
+            DEF wheel_back_left HingeJoint {
+            jointParameters HingeJointParameters {
+                axis -1 0 0
+                anchor -0.15 -0.12 0
+            }
+            device [
+                RotationalMotor {
+                name "wheel_back_left"
+                }
+            ]
+            endPoint Solid {
+                translation -0.15 -0.12 0
+                rotation -1.5700925697641075e-16 1 0 1.5708000000000004
+                children [
+                Shape {
+                    appearance Appearance {
+                    material Material {
+                        diffuseColor 0 0 0.498039
+                    }
+                    texture ImageTexture {
+                        url [
+                        "../textures/wheel.png"
+                        ]
+                    }
+                    textureTransform TextureTransform {
+                        scale -1 1
+                    }
+                    }
+                    geometry Cylinder {
+                    height 0.05
+                    radius 0.1
+                    }
+                }
+                ]
+                name "solid(3)"
+                boundingObject Cylinder {
+                height 0.05
+                radius 0.1
+                }
+                physics Physics {
+                }
+            }
+            }
+            DEF wheel_front_left HingeJoint {
+            jointParameters HingeJointParameters {
+                axis -1 0 0
+                anchor -0.15 0.12 0
+            }
+            device [
+                RotationalMotor {
+                name "wheel_front_left"
+                }
+            ]
+            endPoint Solid {
+                translation -0.15 0.12 0
+                rotation -8.586427363586977e-18 1 -1.2266324805124251e-18 1.570799999999999
+                children [
+                Shape {
+                    appearance Appearance {
+                    material Material {
+                        diffuseColor 0 0 0.498039
+                    }
+                    texture ImageTexture {
+                        url [
+                        "../textures/wheel.png"
+                        ]
+                    }
+                    textureTransform TextureTransform {
+                        scale -1 1
+                    }
+                    }
+                    geometry Cylinder {
+                    height 0.05
+                    radius 0.1
+                    }
+                }
+                ]
+                name "solid(2)"
+                boundingObject Cylinder {
+                height 0.05
+                radius 0.1
+                }
+                physics Physics {
+                }
+            }
+            }
+            DEF wheel_back_right HingeJoint {
+            jointParameters HingeJointParameters {
+                axis -1 0 0
+                anchor 0.15 -0.12 0
+            }
+            device [
+                RotationalMotor {
+                name "wheel_back_right"
+                }
+            ]
+            endPoint Solid {
+                translation 0.15 -0.12 0
+                rotation 7.850447875279521e-17 1 0 1.5707999999999989
+                children [
+                Shape {
+                    appearance Appearance {
+                    material Material {
+                        diffuseColor 0 0 0.498039
+                    }
+                    texture ImageTexture {
+                        url [
+                        "../textures/wheel.png"
+                        ]
+                    }
+                    }
+                    geometry Cylinder {
+                    height 0.05
+                    radius 0.1
+                    }
+                }
+                ]
+                name "solid(1)"
+                boundingObject Cylinder {
+                height 0.05
+                radius 0.1
+                }
+                physics Physics {
+                }
+            }
+            }
+            DEF wheel_front_right HingeJoint {
+            jointParameters HingeJointParameters {
+                axis -1 0 0
+                anchor 0.15 0.12 0
+            }
+            device [
+                RotationalMotor {
+                name "wheel_front_right"
+                }
+            ]
+            endPoint Solid {
+                translation 0.15 0.12 0
+                rotation -3.925223937639758e-17 1 1.962611968819879e-17 1.5707999999999998
+                children [
+                Shape {
+                    appearance Appearance {
+                    material Material {
+                        diffuseColor 0 0 0.498039
+                    }
+                    texture ImageTexture {
+                        url [
+                        "../textures/wheel.png"
+                        ]
+                    }
+                    }
+                    geometry Cylinder {
+                    height 0.05
+                    radius 0.1
+                    }
+                }
+                ]
+                boundingObject Cylinder {
+                height 0.05
+                radius 0.1
+                }
+                physics Physics {
+                }
+            }
+            }
+            Shape {
+            appearance Appearance {
+                material Material {
+                diffuseColor 0 0.666667 0
+                }
+            }
+            geometry Box {
+                size 0.25 0.4 0.1
+            }
+            }
+        ]
+        name "main_body"
+        boundingObject Box {
+            size 0.25 0.4 0.1
+        }
+        physics Physics {
+        }
+        }
+    ]
+    name "vehicle"
+    physics Physics {
+    }
+    controller IS controller
+    }
+}

@@ -38,7 +38,11 @@ initialiseDistanceSensors(distance_sensors, TIME_STEP);
 wb_gps_enable(vehicle_gps, TIME_STEP);
 wb_inertial_unit_enable(vehicle_inertial_unit, TIME_STEP);
 
-
+% Intialise the Vehicle Emitter and receiver
+vehicle_emitter = wb_robot_get_device('vehicle_emitter');
+vehicle_receiver = wb_robot_get_device('vehicle_receiver');
+wb_receiver_enable(vehicle_receiver, TIME_STEP);
+sent_message = false;
 
 
 %A* Algorithm Variables (m)
@@ -56,10 +60,30 @@ astar_position_x = 0;
 astar_position_y = 0;
 astar_turning = false;
 
-% Goal Position
-goal_x = 0.3;
-goal_y = 0.75 ;
-goal_threshold = 0.1;
+% Goal Position from Grabber GPS
+gripper_position = [inf,inf,inf];
+received_gripper_position = false;
+
+% Receive gripper position
+while ~received_gripper_position && wb_robot_step(TIME_STEP) ~= -1
+    if ~received_gripper_position
+        if wb_receiver_get_queue_length(vehicle_receiver) > 0
+            % Read Message as string, convert to position
+            received_message = wb_receiver_get_data(vehicle_receiver, 'string');
+            gripper_position = sscanf(received_message, '%f,%f,%f');
+            fprintf("Received Gripper Position: %f, %f, %f\n", gripper_position(1), gripper_position(2), gripper_position(3));
+            received_gripper_position = true;
+            wb_receiver_next_packet(vehicle_receiver);
+        end
+    end
+end
+
+gripper_x = gripper_position(1);
+gripper_y = gripper_position(2);
+
+goal_x = gripper_x;
+goal_y = gripper_y ;
+goal_threshold = 0.4;
 goal_reached = false;
 grid_based_goal_x = floor((goal_x + floor_x/2) / cell_size) + 1;
 grid_based_goal_y = floor((goal_y + floor_y/2) / cell_size) + 1;
@@ -69,23 +93,19 @@ grid(grid_based_goal_y, grid_based_goal_x) = 2;
 % Debug Display
 grid_display = wb_robot_get_device('grid_display');
 
-
 %Obstacle Avoidance Variables
-distance_threshold = 900;
-
+distance_threshold = 600;
 turn_direction = "None";
 turn_chosen = false;
-
 turn_degree_rad = pi/8;
 target_turn_direction = inf;
 turned_to_direction = false;
 turn_tolerance = 0.05;
-
 started_forward_motion = false;
-forward_motion_time = 0.2;
+forward_motion_time = 0.4;
 forward_motion_start_time = inf;
-
 finished_obstacle_avoidance = false;
+
 
 state = "ASTAR";
 
@@ -102,6 +122,16 @@ while wb_robot_step(TIME_STEP) ~= -1
             stop(wheels);
             fprintf('Goal Reached!\n');
             goal_reached = true;
+
+
+            % Signal Grabber to Grab
+            message = uint8('Vehicle Arrived');
+            if ~sent_message
+                wb_emitter_send(vehicle_emitter, uint8(message));
+                sent_message = true;
+                fprintf("Sent Message: %s\n", message);
+            end            
+
             continue;
         end
 
@@ -445,7 +475,7 @@ function path = aStarSearch(grid, start_x, start_y, goal_x, goal_y)
         current_cell_x = parent_x;
         current_cell_y = parent_y;
     end
-    fprintf("Time taken to reconstruct path: %f\n", toc);
+    % fprintf("Time taken to reconstruct path: %f\n", toc);
 
 end
 
@@ -563,7 +593,7 @@ function grid=mapGridCoordinates(gps_position, distance_sensor_values, yaw,  cel
 end
 
 function grid=addObstacle(grid, obstacle_x, obstacle_y)
-    near_obstacle_search_size = 10;
+    near_obstacle_search_size = 5;
 
     % Find Boundaries
     x_min = max(1, obstacle_x - near_obstacle_search_size);

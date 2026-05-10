@@ -4,11 +4,23 @@ PROTO RoboticArmWithGrabber [
   field SFString name "robotic_arm"
   field SFString gripperContactMaterial "grabber"
   field SFString controller "gripper_controller"
+  field SFVec3f translation 0 0 0.05
 ]
 
 {
     Robot {
     children [
+        GPS {
+        name "Gripper_gps"
+        }
+        Receiver {
+        name "grabber_receiver"
+        channel 1
+        }
+        Emitter {
+        name "grabber_emitter"
+        channel 1
+        }
         DEF joint_1 HingeJoint {
         jointParameters HingeJointParameters {
             axis 0 0 1
@@ -278,8 +290,9 @@ PROTO RoboticArmWithGrabber [
         ]
         }
     ]
-    name "robotic_arm"
-    controller "gripper_controller"
+    name IS name
+    controller IS controller
     supervisor TRUE
+    translation IS translation
     }
 }
