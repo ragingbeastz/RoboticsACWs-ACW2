@@ -19,8 +19,8 @@ WorldInfo {
   ]
 }
 Viewpoint {
-  orientation 0.6101407525760986 0.02047855976273153 -0.7920283395409007 3.1432993117798227
-  position 2.7259476524321165 -0.4454433131489539 9.367443383797742
+  orientation 0.3633734882691076 0.00900214955841918 -0.9316000586767201 3.1876126641542806
+  position 4.871064915031434 -0.5082274674958668 4.811925580305845
 }
 TexturedBackground {
 }
@@ -163,11 +163,11 @@ Solid {
   }
 }
 DEF Target_Box TargetBox {
-  boxTranslation -1.29 0.94 0.025
+  boxTranslation -0.77 1.26 0.025
 }
 DEF VEHICLE Vehicle {
-  translation 1.17985 -1.13 0.0965658
+  translation 1.21985 -1.24 0.0965658
 }
 RoboticArmWithGrabber {
-  translation -1.1 1.15 0.05
+  translation -1.1 1.15 0
 }

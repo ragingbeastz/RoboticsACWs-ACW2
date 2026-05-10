@@ -1,0 +1,48 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "../protos/Vehicle.proto"
+EXTERNPROTO "../protos/RoboticArmWithGrabber.proto"
+EXTERNPROTO "../protos/TargetBox.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.6600951836294549 0.012816328182267253 0.7510726265023383 3.1496972128953304
+  position 2.3431675693020937 0.2878388919759623 20.359037760733635
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+DEF VEHICLE Vehicle {
+  translation -0.23 2.43 0.0965658
+}
+RoboticArmWithGrabber {
+  translation -0.37 0.59 0
+}
+DEF Target_Box TargetBox {
+  boxTranslation -0.78 0.4 0.025
+}
+Solid {
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.215686 0.215686 0.215686
+        metalness 0
+      }
+      geometry Mesh {
+        url [
+          "../meshes/Maze.obj"
+        ]
+      }
+    }
+  ]
+  name "solid(1)"
+  boundingObject Mesh {
+    url [
+      "../meshes/Maze.obj"
+    ]
+  }
+}

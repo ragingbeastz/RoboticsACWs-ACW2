@@ -1,0 +1,246 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "../protos/Vehicle.proto"
+EXTERNPROTO "../protos/RoboticArmWithGrabber.proto"
+EXTERNPROTO "../protos/TargetBox.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.42290550211897526 -0.001152513801075036 0.9061730563139889 3.1465383856485016
+  position 4.563274805405975 -0.016875822726464772 5.1985156071285346
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 3 3
+}
+DEF VEHICLE Vehicle {
+  translation -1.10015 -1.24 0.0965658
+}
+RoboticArmWithGrabber {
+  translation 0.75 1.24 0
+}
+DEF Target_Box TargetBox {
+  boxTranslation 1.12 1.25 0.025
+}
+Solid {
+  translation -0.91 -0.37 0.1
+  children [
+    Solid {
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 0.666667 0 0
+            }
+          }
+          geometry Box {
+            size 0.9 0.2 0.2
+          }
+        }
+      ]
+    }
+    Solid {
+      translation 0.7 -0.3 0
+      rotation 0 0 1 -0.7853996938995746
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 0.666667 0 0
+            }
+          }
+          geometry Box {
+            size 0.9 0.2 0.2
+          }
+        }
+      ]
+      name "solid(1)"
+    }
+  ]
+  name "arc"
+  boundingObject Group {
+    children [
+      Pose {
+        translation 0.7 -0.3 0
+        rotation 0 0 1 -0.7853996938995746
+        children [
+          Shape {
+            appearance Appearance {
+              material Material {
+                diffuseColor 0.666667 0 0
+              }
+            }
+            geometry Box {
+              size 0.9 0.2 0.2
+            }
+          }
+        ]
+      }
+      Pose {
+        children [
+          Shape {
+            appearance Appearance {
+              material Material {
+                diffuseColor 0.666667 0 0
+              }
+            }
+            geometry Box {
+              size 0.9 0.2 0.2
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+Solid {
+  translation 0.147224 1.01039 0.1
+  rotation 0 0 1 -2.2253003061004253
+  children [
+    Solid {
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 0.666667 0 0
+            }
+          }
+          geometry Box {
+            size 0.9 0.2 0.2
+          }
+        }
+      ]
+    }
+    Solid {
+      translation 0.7 -0.3 0
+      rotation 0 0 1 -0.7853996938995746
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 0.666667 0 0
+            }
+          }
+          geometry Box {
+            size 0.9 0.2 0.2
+          }
+        }
+      ]
+      name "solid(1)"
+    }
+  ]
+  name "arc(1)"
+  boundingObject Group {
+    children [
+      Pose {
+        translation 0.7 -0.3 0
+        rotation 0 0 1 -0.7853996938995746
+        children [
+          Shape {
+            appearance Appearance {
+              material Material {
+                diffuseColor 0.666667 0 0
+              }
+            }
+            geometry Box {
+              size 0.9 0.2 0.2
+            }
+          }
+        ]
+      }
+      Pose {
+        children [
+          Shape {
+            appearance Appearance {
+              material Material {
+                diffuseColor 0.666667 0 0
+              }
+            }
+            geometry Box {
+              size 0.9 0.2 0.2
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+Solid {
+  translation 1.09906 -0.964705 0.1
+  rotation 0 0 1 2.3562003061004253
+  children [
+    Solid {
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 0.666667 0 0
+            }
+          }
+          geometry Box {
+            size 0.9 0.2 0.2
+          }
+        }
+      ]
+    }
+    Solid {
+      translation 0.7 -0.3 0
+      rotation 0 0 1 -0.7853996938995746
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 0.666667 0 0
+            }
+          }
+          geometry Box {
+            size 0.9 0.2 0.2
+          }
+        }
+      ]
+      name "solid(1)"
+    }
+  ]
+  name "arc(2)"
+  boundingObject Group {
+    children [
+      Pose {
+        translation 0.7 -0.3 0
+        rotation 0 0 1 -0.7853996938995746
+        children [
+          Shape {
+            appearance Appearance {
+              material Material {
+                diffuseColor 0.666667 0 0
+              }
+            }
+            geometry Box {
+              size 0.9 0.2 0.2
+            }
+          }
+        ]
+      }
+      Pose {
+        children [
+          Shape {
+            appearance Appearance {
+              material Material {
+                diffuseColor 0.666667 0 0
+              }
+            }
+            geometry Box {
+              size 0.9 0.2 0.2
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

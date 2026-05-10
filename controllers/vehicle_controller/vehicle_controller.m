@@ -1,5 +1,5 @@
 TIME_STEP = 64;
-SPEED = 1.0;
+SPEED = 1.5;
 
 % Get motors
 wheel_back_left = wb_robot_get_device('wheel_back_left');
@@ -46,9 +46,21 @@ sent_message = false;
 
 
 %A* Algorithm Variables (m)
-cell_size = 0.03;
-floor_x = 3;
-floor_y = 3;
+test = 3;
+if test == 1 || test == 2
+    % Test 1-2
+    cell_size = 0.03;
+    floor_x = 3;
+    floor_y = 3;
+end
+
+% Test 3
+if test == 3
+    cell_size = 0.075;
+    floor_x = 7.5;
+    floor_y = 7.5;
+end
+
 grid_width = floor_x / cell_size;
 grid_height = floor_y / cell_size;
 grid = zeros(grid_height, grid_width);
@@ -59,6 +71,7 @@ path = [];
 astar_position_x = 0;
 astar_position_y = 0;
 astar_turning = false;
+grid_obstacle_enlargening_amount = 3;
 
 % Goal Position from Grabber GPS
 gripper_position = [inf,inf,inf];
@@ -72,7 +85,10 @@ while ~received_gripper_position && wb_robot_step(TIME_STEP) ~= -1
             received_message = wb_receiver_get_data(vehicle_receiver, 'string');
             gripper_position = sscanf(received_message, '%f,%f,%f');
             fprintf("Received Gripper Position: %f, %f, %f\n", gripper_position(1), gripper_position(2), gripper_position(3));
-            received_gripper_position = true;
+
+            if numel(gripper_position) == 3 && all(isfinite(gripper_position))
+                received_gripper_position = true;
+            end
             wb_receiver_next_packet(vehicle_receiver);
         end
     end
@@ -94,7 +110,8 @@ grid(grid_based_goal_y, grid_based_goal_x) = 2;
 grid_display = wb_robot_get_device('grid_display');
 
 %Obstacle Avoidance Variables
-distance_threshold = 600;
+distance_threshold = 800;
+cleared_threshold = 900;
 turn_direction = "None";
 turn_chosen = false;
 turn_degree_rad = pi/8;
@@ -105,9 +122,10 @@ started_forward_motion = false;
 forward_motion_time = 0.4;
 forward_motion_start_time = inf;
 finished_obstacle_avoidance = false;
-
+front_blocked = false;   
 
 state = "ASTAR";
+previous_state = state;
 
 while wb_robot_step(TIME_STEP) ~= -1
     if ~goal_reached
@@ -115,6 +133,10 @@ while wb_robot_step(TIME_STEP) ~= -1
         position = getPosition(vehicle_gps);
         rpy = getOrientation(vehicle_inertial_unit);
         ds_values = getDS(distance_sensors);
+        left_sensor = ds_values(1);
+        middle_sensor = ds_values(2);   
+        right_sensor = ds_values(3);
+        highest_sensor = max([left_sensor, right_sensor]);
 
         % Check if goal is reached
         distance_to_goal = sqrt((position(1) - goal_x)^2 + (position(2) - goal_y)^2);
@@ -135,66 +157,55 @@ while wb_robot_step(TIME_STEP) ~= -1
             continue;
         end
 
-        if any(ds_values < distance_threshold) && ~astar_turning
+        if any(ds_values < distance_threshold) && ~astar_turning && state ~="Stuck"
             state = "OBSTACLEAVOIDANCE";
+            previous_state = state;
+        end
+        if previous_state == "OBSTACLEAVOIDANCE" 
+            if ~any(ds_values < cleared_threshold)
+                state = "OBSTACLEAVOIDANCE";
+                previous_state = state;
+            end
         end
 
+
+        fprintf("State: %s | Left: %2f | Middle: %2f | Right: %2f | Highest: %2f\n | Turn Direction: %s" , state, left_sensor, middle_sensor, right_sensor, highest_sensor, turn_direction);
+
+
         if state == "OBSTACLEAVOIDANCE"
-            % Find highest
-            left_sensor = ds_values(1);
-            right_sensor = ds_values(3);
-            highest_sensor = max([left_sensor, right_sensor]);
-            
             % Choose turn
             if ~turn_chosen
                 if highest_sensor == left_sensor
                     turn_direction = "Left";
+                    turnLeft(SPEED, wheels);
                 else
                     turn_direction = "Right";
+                    turnRight(SPEED, wheels);
                 end
                 turn_chosen = true;
             end
 
-            % Turn to Direction
-            if target_turn_direction == inf
-                if turn_direction == "Left"
-                    target_turn_direction = rpy(3) + turn_degree_rad;
-                else
-                    target_turn_direction = rpy(3) - turn_degree_rad;
-                end
-            end
 
-            % Turn based on Angle Difference
-            if ~ turned_to_direction
-                angle_difference = atan2(sin(target_turn_direction - rpy(3)), cos(target_turn_direction - rpy(3)));
-                if angle_difference > turn_tolerance
-                    turnLeft(SPEED, wheels);
-                    continue;
-                elseif angle_difference < -turn_tolerance
-                    turnRight(SPEED, wheels);
-                    continue;
-                else
-                    turned_to_direction = true;
-                end
-            end
-
-            % Go forward a bit
-            if ~started_forward_motion
-                forward_motion_start_time = wb_robot_get_time();
-                started_forward_motion = true;
-            end
-            if wb_robot_get_time() - forward_motion_start_time < forward_motion_time
-                goForwards(SPEED, wheels);
-            else
-                stop(wheels);
-                finished_obstacle_avoidance = true;
-            end
-
+            % % Go forward a bit
+            % if middle_sensor > cleared_threshold
+            %     if ~started_forward_motion
+            %         forward_motion_start_time = wb_robot_get_time();
+            %         started_forward_motion = true;
+            %     end
+            %     if wb_robot_get_time() - forward_motion_start_time < forward_motion_time && middle_sensor > distance_threshold
+            %         goForwards(SPEED, wheels);
+            %     else
+            %         stop(wheels);
+            %         finished_obstacle_avoidance = true;
+            %     end
+            % end
+            
+            finished_obstacle_avoidance = true;
 
             % Reset
             if finished_obstacle_avoidance
-                state = "ASTAR";
                 turn_chosen = false;
+                state = "ASTAR";
                 turned_to_direction = false;
                 target_turn_direction = inf;
                 started_forward_motion = false;
@@ -208,7 +219,7 @@ while wb_robot_step(TIME_STEP) ~= -1
         if state == "ASTAR"
             %Update grid map with current sensor readings
             % tic;
-            grid = mapGridCoordinates(position, ds_values, rpy(3), cell_size, grid, floor_x, floor_y);
+            grid = mapGridCoordinates(position, ds_values, rpy(3), cell_size, grid, floor_x, floor_y, grid_obstacle_enlargening_amount);
             % fprintf("Time taken to update grid: %f\n", toc);
             
 
@@ -222,7 +233,7 @@ while wb_robot_step(TIME_STEP) ~= -1
             
             % Update Grid Display
             % tic;
-            updateGridDisplay(grid_display, grid, path);
+            updateGridDisplay(grid_display, grid, path, grid_based_position_x, grid_based_position_y, goal_x, goal_y);
             % fprintf("Time taken to update display: %f\n", toc);
             
             tic;
@@ -245,7 +256,7 @@ while wb_robot_step(TIME_STEP) ~= -1
             % tic;
             % Find Next point in path to current position
             if size(real_path, 1) >= 2
-                index = min(10, size(real_path, 1));
+                index = min(5, size(real_path, 1));
                 closest_path_x = real_path(index, 1);
                 closest_path_y = real_path(index, 2);
             else
@@ -263,7 +274,7 @@ while wb_robot_step(TIME_STEP) ~= -1
             else
                 goForwards(SPEED, wheels);
             end
-
+            previous_state = "ASTAR";
         end
     end
 end
@@ -272,53 +283,82 @@ wb_robot_cleanup();
 
 
 % Update Grid Display Function
-function updateGridDisplay(display, grid, path)
+function updateGridDisplay(display, grid, path, vehicle_grid_location_x, vehicle_grid_location_y, goal_x, goal_y)
+    
+    % Get size of grid
+    [grid_rows, grid_columns] = size(grid);
 
-    [rows, cols] = size(grid);
-
+    % Get size of display
     width = wb_display_get_width(display);
     height = wb_display_get_height(display);
 
-    cellW = width / rows;
-    cellH = height / cols;
+    % Get size of each cell
+    cell_width = width / grid_rows;
+    cell_height = height / grid_columns;
 
-    drawW = max(1, ceil(cellW));
-    drawH = max(1, ceil(cellH));
+    % Get size of each drawn cell
+    drawn_cell_width = max(1, ceil(cell_width));
+    drawn_cell_height = max(1, ceil(cell_height));
 
-    % Clear whole display
+    % Clear display
     wb_display_set_color(display, [1 1 1]);
     wb_display_fill_rectangle(display, 0, 0, width, height);
 
     % Draw grid
-    for y = 1:rows
-        for x = 1:cols
+    for y = 1:grid_rows
+        for x = 1:grid_columns
+            
 
-            px = round((y - 1) * cellW);
-            % Mirrored in X-axis
-            py = round((x - 1) * cellH);
-
+            pixel_x = round((y - 1) * cell_width);
+            pixel_y = round((x - 1) * cell_height);
+            
+            % Fill cells for obstacles
             if grid(y, x) == 1
                 wb_display_set_color(display, [0 0 0]);
-                wb_display_fill_rectangle(display, px, py, drawW, drawH);
-
+                wb_display_fill_rectangle(display, pixel_x, pixel_y, drawn_cell_width, drawn_cell_height);
+            
+            % Fill cells for free space
             elseif grid(y, x) == 2
                 wb_display_set_color(display, [0 1 0]);
-                wb_display_fill_rectangle(display, px, py, drawW, drawH);
+                wb_display_fill_rectangle(display, pixel_x, pixel_y, drawn_cell_width, drawn_cell_height);
             end
         end
     end
 
-    % Draw path
+    % Draw path in red
     wb_display_set_color(display, [1 0 0]);
     for i = 1:size(path, 1)
         x = path(i, 1);
         y = path(i, 2);
 
-        px = round((y - 1) * cellW);
-        py = round((x - 1) * cellH);
+        pixel_x = round((y - 1) * cell_width);
+        pixel_y = round((x - 1) * cell_height);
 
-        wb_display_fill_rectangle(display, px, py, drawW, drawH);
+        wb_display_fill_rectangle(display, pixel_x, pixel_y, drawn_cell_width, drawn_cell_height);
     end
+
+
+    marker_size = 5;
+
+    % Draw vehicle in green
+    wb_display_set_color(display, [0 1 0]);
+    pixel_x = round((vehicle_grid_location_y - 1) * cell_width);
+    pixel_y = round((vehicle_grid_location_x - 1) * cell_height);
+    wb_display_fill_rectangle(display, pixel_x, pixel_y, drawn_cell_width+marker_size, drawn_cell_height+marker_size);
+
+    % Draw Goal in Yellow
+    for x = 1:grid_rows
+        for y = 1:grid_columns
+            if grid(y, x) == 2
+                pixel_x = round((y - 1) * cell_width);
+                pixel_y = round((x - 1) * cell_height);
+                wb_display_set_color(display, [1 1 0]);
+                wb_display_fill_rectangle(display, pixel_x, pixel_y, drawn_cell_width+marker_size, drawn_cell_height+marker_size);
+            end
+        end
+    end
+
+
 end
 
 %Put Wheels in velocity control mode and set their speed to 0
@@ -425,7 +465,7 @@ function path = aStarSearch(grid, start_x, start_y, goal_x, goal_y)
             
             % Calculate movement penalty
             if grid(neighbour_y, neighbour_x) == 3
-                neighbour_penalty = 5;
+                neighbour_penalty = 1000;
             else
                 neighbour_penalty = 0;
             end
@@ -515,7 +555,7 @@ function valid_neighbours = getneighbours(cell_x, cell_y, grid)
 end
 
 %Plot positions on the grid using gps position and distance sensor readings, to be used for A* algorithm
-function grid=mapGridCoordinates(gps_position, distance_sensor_values, yaw,  cell_size, grid, floor_x, floor_y)
+function grid=mapGridCoordinates(gps_position, distance_sensor_values, yaw,  cell_size, grid, floor_x, floor_y, grid_obstacle_enlargening_amount)
     x = gps_position(1);
     y = gps_position(2);
     theta = yaw;
@@ -568,7 +608,7 @@ function grid=mapGridCoordinates(gps_position, distance_sensor_values, yaw,  cel
     if left_sensor_grid_x >= 1 && left_sensor_grid_x <= size(grid, 2) && left_sensor_grid_y >= 1 && left_sensor_grid_y <= size(grid, 1)
         if grid(left_sensor_grid_y, left_sensor_grid_x) ~= 2
             if distance_sensor_values(1) < 1000
-                grid = addObstacle(grid, left_sensor_grid_x, left_sensor_grid_y);
+                grid = addObstacle(grid, left_sensor_grid_x, left_sensor_grid_y, grid_obstacle_enlargening_amount);
             end
         end
     end
@@ -577,7 +617,7 @@ function grid=mapGridCoordinates(gps_position, distance_sensor_values, yaw,  cel
     if middle_sensor_grid_x >= 1 && middle_sensor_grid_x <= size(grid, 2) && middle_sensor_grid_y >= 1 && middle_sensor_grid_y <= size(grid, 1)
         if grid(middle_sensor_grid_y, middle_sensor_grid_x) ~= 2
             if distance_sensor_values(2) < 1000
-                grid = addObstacle(grid, middle_sensor_grid_x, middle_sensor_grid_y);
+                grid = addObstacle(grid, middle_sensor_grid_x, middle_sensor_grid_y, grid_obstacle_enlargening_amount);
             end
         end
     end
@@ -586,14 +626,14 @@ function grid=mapGridCoordinates(gps_position, distance_sensor_values, yaw,  cel
     if right_sensor_grid_x >= 1 && right_sensor_grid_x <= size(grid, 2) && right_sensor_grid_y >= 1 && right_sensor_grid_y <= size(grid, 1)
         if grid(right_sensor_grid_y, right_sensor_grid_x) ~= 2
             if distance_sensor_values(3) < 1000
-                grid = addObstacle(grid, right_sensor_grid_x, right_sensor_grid_y);
+                grid = addObstacle(grid, right_sensor_grid_x, right_sensor_grid_y, grid_obstacle_enlargening_amount);
             end
         end
     end
 end
 
-function grid=addObstacle(grid, obstacle_x, obstacle_y)
-    near_obstacle_search_size = 5;
+function grid=addObstacle(grid, obstacle_x, obstacle_y, grid_obstacle_enlargening_amount)
+    near_obstacle_search_size = grid_obstacle_enlargening_amount;
 
     % Find Boundaries
     x_min = max(1, obstacle_x - near_obstacle_search_size);

@@ -22,21 +22,24 @@ wb_gps_enable(gripper_gps, timestep);
 gripper_position = wb_gps_get_values(gripper_gps);
 gripper_x = gripper_position(1);
 gripper_y = gripper_position(2);
+gripper_z = gripper_position(3);
 zero_position = [gripper_x, gripper_y, 1.3];
 
 
 % Send Grabber Position
 message_sent = false;
 while ~message_sent && wb_robot_step(timestep) ~= -1
-  message = sprintf('%f,%f,%f', gripper_x, gripper_y, 0);
-  wb_emitter_send(emitter, uint8(message));
-  fprintf("Sent Grabber Position: %s\n", message);
-  message_sent = true;
+  if isnumeric(gripper_x) && isnumeric(gripper_y)
+    message = sprintf('%f,%f,%f', gripper_x, gripper_y, 0);
+    wb_emitter_send(emitter, uint8(message));
+    fprintf("Sent Grabber Position: %s\n", message);
+    message_sent = true;
+  end
 end
 
 % Original ACW1 had gripper at 0,0,0, now gripper is at gripper_x, gripper_y, 0 so correct positions
-arm_position = [gripper_x, gripper_y, 0];
-original_box_position = [original_box_position(1) - gripper_x, original_box_position(2) - gripper_y, original_box_position(3) - 0.05];
+arm_position = [gripper_x, gripper_y, gripper_z];
+original_box_position = [original_box_position(1) - gripper_x, original_box_position(2) - gripper_y, original_box_position(3) - 0.01];
 zero_position = [zero_position(1) - gripper_x, zero_position(2) - gripper_y, zero_position(3)];
 
 while wb_robot_step(timestep) ~= -1
@@ -50,7 +53,13 @@ while wb_robot_step(timestep) ~= -1
       fprintf("Vehicle Arrived\n");
 
       % Get Vehicle Position
-      vehicle_position = wb_supervisor_node_get_position(vehicle_node);
+      received_vehicle_position = false;
+      while ~received_vehicle_position
+        vehicle_position = wb_supervisor_node_get_position(vehicle_node);
+        if numel(vehicle_position) == 3 && all(isfinite(vehicle_position))
+          received_vehicle_position = true;
+        end
+      end
 
       % Original ACW1 had gripper at 0,0,0, now gripper is at gripper_x, gripper_y, 0 so correct positions
       vehicle_position = [vehicle_position(1) - gripper_x, vehicle_position(2) - gripper_y, vehicle_position(3) + 0.1];
@@ -66,12 +75,12 @@ while wb_robot_step(timestep) ~= -1
       fprintf("Target Box Position: %f, %f, %f\n", original_box_position(1), original_box_position(2), original_box_position(3));
 
       %Main Logic
-      move_arm_to_position(original_box_position(1), original_box_position(2), original_box_position(3));
+      move_arm_to_position(original_box_position(1), original_box_position(2), original_box_position(3), "send");
       close_gripper();
-      move_arm_to_position(zero_position(1), zero_position(2), zero_position(3));
-      move_arm_to_position(vehicle_position(1), vehicle_position(2), vehicle_position(3));
+      move_arm_to_position(zero_position(1), zero_position(2), zero_position(3), "return");
+      move_arm_to_position(vehicle_position(1), vehicle_position(2), vehicle_position(3), "send");
       open_gripper();
-      move_arm_to_position(zero_position(1), zero_position(2), zero_position(3));
+      move_arm_to_position(zero_position(1), zero_position(2), zero_position(3), "return");
     end
 
     % Clear message
@@ -128,7 +137,7 @@ function close_gripper()
   left_gripper_motor  = wb_robot_get_device('gripper_left_motor');
   
   %Set Gripper Force
-  grip_force = 10
+  grip_force = 10;
   wb_motor_set_available_force(right_gripper_motor, grip_force)
   wb_motor_set_available_force(left_gripper_motor, grip_force)
   
@@ -142,8 +151,8 @@ function close_gripper()
   
   wb_robot_step(timestep);
   
-  closed_position = 0.1
-  gripper_motor_speed = 0.1
+  closed_position = 0.1;
+  gripper_motor_speed = 0.1;
   wb_motor_set_velocity(right_gripper_motor, gripper_motor_speed);
   wb_motor_set_velocity(left_gripper_motor, gripper_motor_speed);
   wb_motor_set_position(right_gripper_motor, closed_position);
@@ -159,7 +168,7 @@ function close_gripper()
 end
 
 %Robot Functions
-function move_arm_to_position(x, y, z)
+function move_arm_to_position(x, y, z, direction)
   timestep = wb_robot_get_basic_time_step();
   
   % Get motors
@@ -238,56 +247,109 @@ function move_arm_to_position(x, y, z)
   %Set Motor Positions and Velocities
 
 
-  
-  
-  % Move joints
-  time = 0;
-  while wb_robot_step(timestep) ~= -1
-      current1 = wb_position_sensor_get_value(sensor1);
-      wb_motor_set_position(motor1, theta1);
-      wb_motor_set_velocity(motor1, m_speed);
+  if direction == "send"  
+    
+    % Move joints
+    time = 0;
+    while wb_robot_step(timestep) ~= -1
+        current1 = wb_position_sensor_get_value(sensor1);
+        wb_motor_set_position(motor1, theta1);
+        wb_motor_set_velocity(motor1, m_speed);
 
 
-      time = time + timestep/1000;
-  
-      if abs(current1 - theta1) < tolerance
+        time = time + timestep/1000;
+    
+        if abs(current1 - theta1) < tolerance
+            break;
+        end
+        if time>=7.5
           break;
-      end
-      if time>=7.5
-        break;
-      end
+        end
+    end
+
+    time = 0;
+    while wb_robot_step(timestep) ~= -1
+        current2 = wb_position_sensor_get_value(sensor2);
+        time = time + timestep/1000;
+        wb_motor_set_position(motor2, theta2);
+        wb_motor_set_velocity(motor2, m_speed);
+    
+        if abs(current2 - theta2) < tolerance
+            break;
+        end
+        if time>=7.5
+          break;
+        end
+    end
+
+    time = 0;
+    while wb_robot_step(timestep) ~= -1
+        current3 = wb_position_sensor_get_value(sensor3);
+        time = time + timestep/1000;
+        wb_motor_set_position(motor3, theta3);
+        wb_motor_set_velocity(motor3, m_speed);
+    
+        if abs(current3 - theta3) < tolerance
+            break;
+        end
+        if time>=7.5
+          break;
+        end
+    end
   end
 
-  time = 0;
-  while wb_robot_step(timestep) ~= -1
-      current2 = wb_position_sensor_get_value(sensor2);
-      time = time + timestep/1000;
-      wb_motor_set_position(motor2, theta2);
-      wb_motor_set_velocity(motor2, m_speed);
+  if direction == "return"
   
-      if abs(current2 - theta2) < tolerance
+    time = 0;
+    while wb_robot_step(timestep) ~= -1
+        current3 = wb_position_sensor_get_value(sensor3);
+        time = time + timestep/1000;
+        wb_motor_set_position(motor3, theta3);
+        wb_motor_set_velocity(motor3, m_speed);
+    
+        if abs(current3 - theta3) < tolerance
+            break;
+        end
+        if time>=7.5
           break;
-      end
-      if time>=7.5
-        break;
-      end
-  end
+        end
+    end
 
-  time = 0;
-  while wb_robot_step(timestep) ~= -1
-      current3 = wb_position_sensor_get_value(sensor3);
-      time = time + timestep/1000;
-      wb_motor_set_position(motor3, theta3);
-      wb_motor_set_velocity(motor3, m_speed);
-  
-      if abs(current3 - theta3) < tolerance
+    time = 0;
+    while wb_robot_step(timestep) ~= -1
+        current2 = wb_position_sensor_get_value(sensor2);
+        time = time + timestep/1000;
+        wb_motor_set_position(motor2, theta2);
+        wb_motor_set_velocity(motor2, m_speed);
+    
+        if abs(current2 - theta2) < tolerance
+            break;
+        end
+        if time>=7.5
           break;
-      end
-      if time>=7.5
-        break;
-      end
+        end
+    end
+
+    time = 0;
+    while wb_robot_step(timestep) ~= -1
+        current1 = wb_position_sensor_get_value(sensor1);
+        wb_motor_set_position(motor1, theta1);
+        wb_motor_set_velocity(motor1, m_speed);
+
+
+        time = time + timestep/1000;
+    
+        if abs(current1 - theta1) < tolerance
+            break;
+        end
+        if time>=7.5
+          break;
+        end
+    end
   end
 end
+    
+
 
 
 wb_robot_cleanup();
