@@ -48,7 +48,7 @@ sent_message = false;
 
 
 %A* Algorithm Variables (m)
-test = 3;
+test = 1;
 if test == 1 || test == 2
     % Test 1-2
     cell_size = 0.05;
@@ -112,7 +112,7 @@ grid_display = wb_robot_get_device('grid_display');
 while wb_robot_step(TIME_STEP) ~= -1
     if ~goal_reached
         % Get current position and distance sensor readings
-        position = wb_gps_get_values(gps);
+        position = wb_gps_get_values(vehicle_gps);
         rpy = getVehicleOrientation(vehicle_inertial_unit);
         ds_values = getDistanceSensorValues(distance_sensors);
 
@@ -367,7 +367,7 @@ function path = aStarSearch(grid, start_x, start_y, goal_x, goal_y)
                 unexplored(neighbour_y, neighbour_x) = true;
                 unexplored_list = [unexplored_list; neighbour_x, neighbour_y];
             
-            % If neighbour is already unexplored but has a higher g_cost, skip
+            % If neighbour is already explored but the new g_cost is higher, skip
             elseif new_g_cost >= g_costs(neighbour_y, neighbour_x)
                 continue;
             end
