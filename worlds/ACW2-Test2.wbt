@@ -30,7 +30,7 @@ DEF Target_Box TargetBox {
   boxTranslation 1.12 1.25 0.025
 }
 Solid {
-  translation -0.91 -0.37 0.1
+  translation -0.91 -0.26 0.1
   children [
     Solid {
       children [
